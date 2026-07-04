@@ -292,12 +292,26 @@ export default function App() {
   useEffect(() => { saveLS("svmg_logos", logoLib); }, [logoLib]);
 
   // Logo-Bibliothek
-  const handleLogoPick = e => {
+const handleLogoPick = e => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
-    r.onload = ev => setPendingLogo(ev.target.result);
+    r.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 200;
+        let { width, height } = img;
+        if (width > height) { if (width > max) { height = height * max / width; width = max; } }
+        else { if (height > max) { width = width * max / height; height = max; } }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        setPendingLogo(canvas.toDataURL("image/png"));
+      };
+      img.src = ev.target.result;
+    };
     r.readAsDataURL(f);
     e.target.value = "";
+  };
   };
   const addToLib = async () => {
     if (!pendingLogo || !newLogoName.trim()) return;
