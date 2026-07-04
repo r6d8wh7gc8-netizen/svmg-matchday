@@ -379,7 +379,7 @@ export default function App() {
   const downloadPoster = async () => {
     setDownloading(true);
     try {
-      const h2c = (await import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.esm.js")).default;
+     const h2c = (await import("html2canvas")).default;
       const canvas = await h2c(posterRef.current,{scale:3,useCORS:true,allowTaint:true,backgroundColor:null});
       const a = document.createElement("a");
       a.download = `matchday-${form.homeTeam||"post"}.png`.replace(/\s+/g,"-");
