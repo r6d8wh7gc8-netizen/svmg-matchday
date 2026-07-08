@@ -47,6 +47,7 @@ const BLANK = {
   mood:"motivierend", font:"'Comic Sans MS','Chalkboard SE',cursive",
   format:"square", hashtags:"#SVMG #Amateurfußball", homeLogo:null, awayLogo:null, bgImage:null,
   scheduleTitle:"TEAM I", ownLogo:null,
+  schedScale:100, schedX:0, schedY:0,
   sections:[{ name:"Testspiele", matches:[{ opponent:"", isHome:true, date:"", time:"" }] }],
 };
 
@@ -329,7 +330,7 @@ function SchedulePoster({ d, logoLib, positions, onMove, editMode }) {
       {/* CONTENT */}
       <div ref={boxRef} style={{flex:1,position:"relative",overflow:"hidden",background:d.bgImage?"rgba(26,34,184,0.3)":"rgba(26,34,184,1)"}}>
         <SplashBottom dim={!!d.bgImage}/>
-        <div ref={contentRef} style={{position:"relative",zIndex:2,padding:"4% 7%",display:"flex",flexDirection:"column",justifyContent:"center",minHeight:"100%"}}>
+        <div ref={contentRef} style={{position:"relative",zIndex:2,padding:"4% 7%",display:"flex",flexDirection:"column",justifyContent:"center",minHeight:"100%",transform:`scale(${(d.schedScale??100)/100}) translate(${d.schedX??0}%, ${d.schedY??0}%)`,transformOrigin:"center"}}>
           {sections.map((sec,si)=>(
             <div key={si} style={{marginBottom:`${(6*scale).toFixed(1)}%`}}>
               <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:px(13,4,18),color:"#fff",textAlign:"center",letterSpacing:1,marginBottom:`${(4*scale).toFixed(1)}%`,textShadow:"1px 2px 0 rgba(0,0,50,0.4)"}}>{sec.name}</div>
@@ -699,6 +700,30 @@ export default function App() {
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                   <div><label>Titel</label><input value={form.scheduleTitle} onChange={e=>set("scheduleTitle",e.target.value)} placeholder="TEAM I"/></div>
                   <ImgUpload label="Eigenes Wappen (SVMG)" value={form.ownLogo} onChange={v=>set("ownLogo",v)} h={90}/>
+                </div>
+              </div>
+
+              <div style={card}>
+                <label style={{fontSize:13,marginBottom:4}}>↕️ Größe & Position (Spielliste)</label>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.32)",marginBottom:12}}>Die Liste passt sich automatisch an — hiermit kannst du zusätzlich manuell nachjustieren.</div>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {[
+                    {key:"schedScale", label:"Größe",      min:50,  max:150, def:100, unit:"%"},
+                    {key:"schedX",     label:"Position X", min:-50, max:50,  def:0,   unit:""},
+                    {key:"schedY",     label:"Position Y", min:-50, max:50,  def:0,   unit:""},
+                  ].map(({key,label,min,max,def,unit})=>(
+                    <div key={key} style={{display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:12,color:"rgba(255,255,255,0.5)",width:72,flexShrink:0}}>{label}</span>
+                      <input type="range" min={min} max={max} value={form[key]??def}
+                        onChange={e=>set(key,parseInt(e.target.value))}
+                        style={{flex:1,background:"transparent",border:"none",padding:0,accentColor:"#6eb4ff"}}/>
+                      <span style={{fontSize:12,color:"rgba(255,255,255,0.5)",width:38,textAlign:"right"}}>{form[key]??def}{unit}</span>
+                    </div>
+                  ))}
+                  <button onClick={()=>{set("schedScale",100);set("schedX",0);set("schedY",0);}}
+                    style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:7,padding:"6px",color:"rgba(255,255,255,0.4)",fontSize:12,cursor:"pointer"}}>
+                    ↺ Zurücksetzen
+                  </button>
                 </div>
               </div>
 
