@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import html2canvas from "html2canvas";
 
 function loadLS(key, fallback) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
@@ -274,7 +275,8 @@ export default function App() {
   const [showTpl, setShowTpl]     = useState(false);
   const [showLogos, setShowLogos] = useState(false);
   const [editMode, setEditMode]   = useState(false);
-  const [positions, setPositions] = useState({});
+  const [allPositions, setAllPositions] = useState(() => loadLS("svmg_positions", { matchday: {}, result: {} }));
+  const positions = allPositions[form.postType] || {};
   const [slots, setSlots]         = useState(() => loadLS("svmg_slots", { matchday: null, result: null }));
   const [savedMsg, setSavedMsg]   = useState("");
   const [logoLib, setLogoLib]     = useState(() => loadLS("svmg_logos", []));
@@ -290,21 +292,24 @@ export default function App() {
   useEffect(() => { saveLS("svmg_form", form); }, [form]);
   useEffect(() => { saveLS("svmg_slots", slots); }, [slots]);
   useEffect(() => { saveLS("svmg_logos", logoLib); }, [logoLib]);
+  useEffect(() => { saveLS("svmg_positions", allPositions); }, [allPositions]);
 
   // Logo-Bibliothek
-const handleLogoPick = e => {
+  const handleLogoPick = e => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
     r.onload = ev => {
+      // Bild verkleinern damit es in localStorage passt
       const img = new Image();
       img.onload = () => {
-        const max = 200;
+        const max = 200; // max 200px
         let { width, height } = img;
         if (width > height) { if (width > max) { height = height * max / width; width = max; } }
         else { if (height > max) { width = width * max / height; height = max; } }
         const canvas = document.createElement("canvas");
         canvas.width = width; canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
         setPendingLogo(canvas.toDataURL("image/png"));
       };
       img.src = ev.target.result;
@@ -312,12 +317,15 @@ const handleLogoPick = e => {
     r.readAsDataURL(f);
     e.target.value = "";
   };
-  };
-  const addToLib = async () => {
+  const addToLib = () => {
     if (!pendingLogo || !newLogoName.trim()) return;
     const updated = [...logoLib, { name: newLogoName.trim(), logo: pendingLogo }];
     setLogoLib(updated);
-    saveLS("svmg_logos", updated);
+    try {
+      saveLS("svmg_logos", updated);
+    } catch {
+      alert("Speicher voll — bitte ein paar alte Logos löschen.");
+    }
     setNewLogoName(""); setPendingLogo(null);
   };
   const removeFromLib = async (name) => {
@@ -372,7 +380,7 @@ const handleLogoPick = e => {
   const setLine = (i,v) => setForm(f=>{const l=[...f.extraLines];l[i]=v;return{...f,extraLines:l};});
   const addLine = () => setForm(f=>({...f,extraLines:[...f.extraLines,""]}));
   const removeLine = i => setForm(f=>({...f,extraLines:f.extraLines.filter((_,j)=>j!==i)}));
-  const onMove = (id,pos) => setPositions(p=>({...p,[id]:pos}));
+  const onMove = (id,pos) => setAllPositions(p => ({...p, [form.postType]: {...(p[form.postType]||{}), [id]: pos}}));
 
   const generate = async () => {
     if (!apiKey) { alert("Bitte zuerst oben rechts den API-Key eingeben (⚙️)."); return; }
@@ -393,8 +401,7 @@ const handleLogoPick = e => {
   const downloadPoster = async () => {
     setDownloading(true);
     try {
-     const h2c = (await import("html2canvas")).default;
-      const canvas = await h2c(posterRef.current,{scale:3,useCORS:true,allowTaint:true,backgroundColor:null});
+      const canvas = await html2canvas(posterRef.current,{scale:3,useCORS:true,allowTaint:true,backgroundColor:null});
       const a = document.createElement("a");
       a.download = `matchday-${form.homeTeam||"post"}.png`.replace(/\s+/g,"-");
       a.href = canvas.toDataURL("image/png"); a.click();
@@ -687,7 +694,7 @@ const handleLogoPick = e => {
             <button onClick={()=>setEditMode(v=>!v)} style={{flex:1,background:editMode?"rgba(255,200,0,0.2)":"rgba(255,255,255,0.07)",border:`1.5px solid ${editMode?"#ffd700":"rgba(255,255,255,0.18)"}`,borderRadius:8,padding:"8px",color:editMode?"#ffd700":"rgba(255,255,255,0.6)",fontSize:13,fontWeight:600,cursor:"pointer"}}>
               {editMode?"✅ Fertig":"✏️ Texte verschieben"}
             </button>
-            {Object.keys(positions).length>0 && <button onClick={()=>setPositions({})} style={{background:"rgba(255,60,60,0.15)",border:"1px solid rgba(255,60,60,0.3)",borderRadius:8,padding:"8px 12px",color:"#ff8080",fontSize:12,cursor:"pointer"}}>↺</button>}
+            {Object.keys(positions).length>0 && <button onClick={()=>setAllPositions(p=>({...p, [form.postType]: {}}))} style={{background:"rgba(255,60,60,0.15)",border:"1px solid rgba(255,60,60,0.3)",borderRadius:8,padding:"8px 12px",color:"#ff8080",fontSize:12,cursor:"pointer"}}>↺</button>}
           </div>
           {editMode && <div style={{background:"rgba(255,200,0,0.08)",border:"1px solid rgba(255,200,0,0.25)",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:12,color:"rgba(255,220,100,0.8)"}}>👆 Texte auf dem Poster ziehen</div>}
 
