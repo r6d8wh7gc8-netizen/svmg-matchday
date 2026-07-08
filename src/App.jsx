@@ -124,10 +124,10 @@ function DragText({ id, positions, onMove, children, style }) {
   );
 }
 
-function LogoBox({ src, alt }) {
+function LogoBox({ src, alt, size=70 }) {
   return (
-    <div style={{width:70,height:70,borderRadius:10,background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:4,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>
-      {src ? <img src={src} alt={alt} style={{width:"100%",height:"100%",objectFit:"contain"}}/> : <span style={{fontSize:28}}>🛡️</span>}
+    <div style={{width:size,height:size,borderRadius:size*0.14,background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:size*0.06,flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>
+      {src ? <img src={src} alt={alt} style={{width:"100%",height:"100%",objectFit:"contain"}}/> : <span style={{fontSize:size*0.4}}>🛡️</span>}
     </div>
   );
 }
@@ -282,6 +282,16 @@ function SchedulePoster({ d, logoLib, positions, onMove, editMode }) {
     const [y,m,day] = raw.split("-");
     return day && m && y ? `${day}.${m}.${y}` : raw;
   };
+
+  // Automatische Skalierung: je mehr Zeilen (Rubriken + Spiele), desto kompakter
+  const sections = d.sections||[];
+  const totalMatches = sections.reduce((n,s)=>n+((s.matches||[]).length),0);
+  const totalRows = totalMatches + sections.length; // Spiele + Rubrik-Überschriften
+  const BASE_ROWS = 7; // ab hier passt alles bei 100%
+  const scale = Math.max(0.42, Math.min(1, BASE_ROWS / Math.max(totalRows,1)));
+  const px = (min,vw,max) => `clamp(${(min*scale).toFixed(1)}px, ${(vw*scale).toFixed(2)}vw, ${(max*scale).toFixed(1)}px)`;
+  const logoSize = Math.round(70*scale);
+
   return (
     <div style={{width:"100%",aspectRatio:fmt.ratio,display:"flex",flexDirection:"column",borderRadius:14,border:"2px solid rgba(255,255,255,0.12)",boxShadow:"0 8px 40px rgba(0,0,0,0.6)",position:"relative",backgroundColor:"#1a22b8",overflow:"hidden"}}>
       {d.bgImage && (
@@ -301,23 +311,23 @@ function SchedulePoster({ d, logoLib, positions, onMove, editMode }) {
       {/* CONTENT */}
       <div style={{flex:1,position:"relative",overflow:"hidden",background:d.bgImage?"rgba(26,34,184,0.3)":"rgba(26,34,184,1)"}}>
         <SplashBottom dim={!!d.bgImage}/>
-        <div style={{position:"relative",zIndex:2,height:"100%",overflowY:"auto",padding:"5% 7%"}}>
-          {(d.sections||[]).map((sec,si)=>(
-            <div key={si} style={{marginBottom:"7%"}}>
-              <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:"clamp(13px,4vw,18px)",color:"#fff",textAlign:"center",letterSpacing:1,marginBottom:"5%",textShadow:"1px 2px 0 rgba(0,0,50,0.4)"}}>{sec.name}</div>
+        <div style={{position:"relative",zIndex:2,height:"100%",overflowY:"auto",padding:`${(4*scale).toFixed(1)}% 7%`,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+          {sections.map((sec,si)=>(
+            <div key={si} style={{marginBottom:`${(6*scale).toFixed(1)}%`}}>
+              <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:px(13,4,18),color:"#fff",textAlign:"center",letterSpacing:1,marginBottom:`${(4*scale).toFixed(1)}%`,textShadow:"1px 2px 0 rgba(0,0,50,0.4)"}}>{sec.name}</div>
               {(sec.matches||[]).map((m,mi)=>{
                 const oppLogo = findLogoInLib(m.opponent, logoLib);
                 const left  = m.isHome ? d.ownLogo : oppLogo;
                 const right = m.isHome ? oppLogo   : d.ownLogo;
                 return (
-                  <div key={mi} style={{display:"flex",alignItems:"center",gap:"3%",marginBottom:"6%"}}>
-                    <LogoBox src={left}  alt="Heim"/>
-                    <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:"clamp(14px,4vw,20px)",color:"#fff"}}>–</div>
-                    <LogoBox src={right} alt="Gast"/>
+                  <div key={mi} style={{display:"flex",alignItems:"center",gap:"3%",marginBottom:`${(5*scale).toFixed(1)}%`}}>
+                    <LogoBox src={left}  alt="Heim" size={logoSize}/>
+                    <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:px(14,4,20),color:"#fff"}}>–</div>
+                    <LogoBox src={right} alt="Gast" size={logoSize}/>
                     <div style={{width:2,alignSelf:"stretch",background:"rgba(255,255,255,0.4)",flexShrink:0}}/>
                     <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,color:"#fff",letterSpacing:1,lineHeight:1.4,flex:1,textShadow:"1px 2px 0 rgba(0,0,50,0.4)"}}>
-                      <div style={{fontSize:"clamp(16px,5vw,22px)"}}>{dateStr(m.date)}</div>
-                      <div style={{fontSize:"clamp(10px,3vw,14px)",color:"rgba(255,255,255,0.85)"}}>{m.time?`${m.time} UHR`:"HH:MM UHR"}</div>
+                      <div style={{fontSize:px(16,5,22)}}>{dateStr(m.date)}</div>
+                      <div style={{fontSize:px(10,3,14),color:"rgba(255,255,255,0.85)"}}>{m.time?`${m.time} UHR`:"HH:MM UHR"}</div>
                     </div>
                   </div>
                 );
