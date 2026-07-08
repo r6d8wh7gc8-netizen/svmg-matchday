@@ -331,7 +331,7 @@ function SchedulePoster({ d, logoLib, positions, onMove, editMode }) {
 }
 
 export default function App() {
-  const [form, setForm]           = useState(() => loadLS("svmg_form", {...BLANK}));
+  const [form, setForm]           = useState(() => ({...BLANK, ...loadLS("svmg_form", {})}));
   const [caption, setCaption]     = useState("");
   const [loading, setLoading]     = useState(false);
   const [copied, setCopied]       = useState(false);
@@ -442,12 +442,12 @@ export default function App() {
   const removeLine = i => setForm(f=>({...f,extraLines:f.extraLines.filter((_,j)=>j!==i)}));
 
   // Spielplan (Rubriken & Spiele)
-  const addSection = () => setForm(f=>({...f,sections:[...f.sections,{name:"Neue Rubrik",matches:[{opponent:"",isHome:true,date:"",time:""}]}]}));
-  const removeSection = si => setForm(f=>({...f,sections:f.sections.filter((_,i)=>i!==si)}));
-  const setSectionName = (si,name) => setForm(f=>{const s=[...f.sections];s[si]={...s[si],name};return{...f,sections:s};});
-  const addMatch = si => setForm(f=>{const s=[...f.sections];s[si]={...s[si],matches:[...s[si].matches,{opponent:"",isHome:true,date:"",time:""}]};return{...f,sections:s};});
-  const removeMatch = (si,mi) => setForm(f=>{const s=[...f.sections];s[si]={...s[si],matches:s[si].matches.filter((_,j)=>j!==mi)};return{...f,sections:s};});
-  const setMatchField = (si,mi,key,val) => setForm(f=>{const s=[...f.sections];const matches=[...s[si].matches];matches[mi]={...matches[mi],[key]:val};s[si]={...s[si],matches};return{...f,sections:s};});
+  const addSection = () => setForm(f=>({...f,sections:[...(f.sections||[]),{name:"Neue Rubrik",matches:[{opponent:"",isHome:true,date:"",time:""}]}]}));
+  const removeSection = si => setForm(f=>({...f,sections:(f.sections||[]).filter((_,i)=>i!==si)}));
+  const setSectionName = (si,name) => setForm(f=>{const s=[...(f.sections||[])];s[si]={...s[si],name};return{...f,sections:s};});
+  const addMatch = si => setForm(f=>{const s=[...(f.sections||[])];s[si]={...s[si],matches:[...(s[si].matches||[]),{opponent:"",isHome:true,date:"",time:""}]};return{...f,sections:s};});
+  const removeMatch = (si,mi) => setForm(f=>{const s=[...(f.sections||[])];s[si]={...s[si],matches:(s[si].matches||[]).filter((_,j)=>j!==mi)};return{...f,sections:s};});
+  const setMatchField = (si,mi,key,val) => setForm(f=>{const s=[...(f.sections||[])];const matches=[...(s[si].matches||[])];matches[mi]={...matches[mi],[key]:val};s[si]={...s[si],matches};return{...f,sections:s};});
   const onMove = (id,pos) => setAllPositions(p => ({...p, [form.postType]: {...(p[form.postType]||{}), [id]: pos}}));
 
   const generate = async () => {
@@ -674,14 +674,14 @@ export default function App() {
                 </div>
               </div>
 
-              {form.sections.map((sec,si)=>(
+              {(form.sections||[]).map((sec,si)=>(
                 <div key={si} style={card}>
                   <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
                     <input value={sec.name} onChange={e=>setSectionName(si,e.target.value)} placeholder="Rubrik (z. B. Testspiele)" style={{flex:1,fontWeight:700}}/>
                     <button onClick={()=>removeSection(si)} style={{background:"rgba(255,60,60,0.15)",border:"1px solid rgba(255,60,60,0.3)",borderRadius:6,padding:"8px 10px",color:"#ff8080",fontSize:13,cursor:"pointer",flexShrink:0}}>✕ Rubrik</button>
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                    {sec.matches.map((m,mi)=>(
+                    {(sec.matches||[]).map((m,mi)=>(
                       <div key={mi} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,padding:10,display:"grid",gridTemplateColumns:"1fr auto",gap:8}}>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                           <div style={{gridColumn:"1/-1"}}><label>Gegner</label><input value={m.opponent} onChange={e=>setMatchField(si,mi,"opponent",e.target.value)} placeholder="TSV Meckenbeuren"/></div>
