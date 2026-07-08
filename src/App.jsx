@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import html2canvas from "html2canvas";
 
 function loadLS(key, fallback) {
@@ -283,12 +283,30 @@ function SchedulePoster({ d, logoLib, positions, onMove, editMode }) {
     return day && m && y ? `${day}.${m}.${y}` : raw;
   };
 
-  // Automatische Skalierung: je mehr Zeilen (Rubriken + Spiele), desto kompakter
   const sections = d.sections||[];
   const totalMatches = sections.reduce((n,s)=>n+((s.matches||[]).length),0);
-  const totalRows = totalMatches + sections.length; // Spiele + Rubrik-Überschriften
-  const BASE_ROWS = 7; // ab hier passt alles bei 100%
-  const scale = Math.max(0.42, Math.min(1, BASE_ROWS / Math.max(totalRows,1)));
+  const totalRows = totalMatches + sections.length;
+
+  // Automatische Größenanpassung: misst tatsächlich, ob der Inhalt in den
+  // verfügbaren Platz passt, und verkleinert so lange, bis es passt.
+  const boxRef = useRef(null);
+  const contentRef = useRef(null);
+  const [scale, setScale] = useState(1);
+  const contentKey = `${totalRows}|${d.font}|${d.scheduleTitle}|${d.format}`;
+
+  useEffect(() => { setScale(1); }, [contentKey]);
+
+  useLayoutEffect(() => {
+    const box = boxRef.current, inner = contentRef.current;
+    if (!box || !inner) return;
+    const avail = box.clientHeight;
+    const needed = inner.scrollHeight;
+    if (needed > avail + 1) {
+      const next = Math.max(0.3, scale * (avail/needed) * 0.96);
+      if (next < scale - 0.005) setScale(next);
+    }
+  }, [scale, contentKey]);
+
   const px = (min,vw,max) => `clamp(${(min*scale).toFixed(1)}px, ${(vw*scale).toFixed(2)}vw, ${(max*scale).toFixed(1)}px)`;
   const logoSize = Math.round(70*scale);
 
@@ -309,9 +327,9 @@ function SchedulePoster({ d, logoLib, positions, onMove, editMode }) {
         </DragText>
       </div>
       {/* CONTENT */}
-      <div style={{flex:1,position:"relative",overflow:"hidden",background:d.bgImage?"rgba(26,34,184,0.3)":"rgba(26,34,184,1)"}}>
+      <div ref={boxRef} style={{flex:1,position:"relative",overflow:"hidden",background:d.bgImage?"rgba(26,34,184,0.3)":"rgba(26,34,184,1)"}}>
         <SplashBottom dim={!!d.bgImage}/>
-        <div style={{position:"relative",zIndex:2,height:"100%",overflowY:"auto",padding:`${(4*scale).toFixed(1)}% 7%`,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+        <div ref={contentRef} style={{position:"relative",zIndex:2,padding:"4% 7%",display:"flex",flexDirection:"column",justifyContent:"center",minHeight:"100%"}}>
           {sections.map((sec,si)=>(
             <div key={si} style={{marginBottom:`${(6*scale).toFixed(1)}%`}}>
               <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:px(13,4,18),color:"#fff",textAlign:"center",letterSpacing:1,marginBottom:`${(4*scale).toFixed(1)}%`,textShadow:"1px 2px 0 rgba(0,0,50,0.4)"}}>{sec.name}</div>
@@ -322,12 +340,12 @@ function SchedulePoster({ d, logoLib, positions, onMove, editMode }) {
                 return (
                   <div key={mi} style={{display:"flex",alignItems:"center",gap:"3%",marginBottom:`${(5*scale).toFixed(1)}%`}}>
                     <LogoBox src={left}  alt="Heim" size={logoSize}/>
-                    <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:px(14,4,20),color:"#fff"}}>–</div>
+                    <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:px(14,4,20),color:"#fff",flexShrink:0}}>–</div>
                     <LogoBox src={right} alt="Gast" size={logoSize}/>
                     <div style={{width:2,alignSelf:"stretch",background:"rgba(255,255,255,0.4)",flexShrink:0}}/>
-                    <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,color:"#fff",letterSpacing:1,lineHeight:1.4,flex:1,textShadow:"1px 2px 0 rgba(0,0,50,0.4)"}}>
-                      <div style={{fontSize:px(16,5,22)}}>{dateStr(m.date)}</div>
-                      <div style={{fontSize:px(10,3,14),color:"rgba(255,255,255,0.85)"}}>{m.time?`${m.time} UHR`:"HH:MM UHR"}</div>
+                    <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,color:"#fff",letterSpacing:1,lineHeight:1.4,flex:1,minWidth:0,textShadow:"1px 2px 0 rgba(0,0,50,0.4)"}}>
+                      <div style={{fontSize:px(16,5,22),whiteSpace:"nowrap"}}>{dateStr(m.date)}</div>
+                      <div style={{fontSize:px(10,3,14),color:"rgba(255,255,255,0.85)",whiteSpace:"nowrap"}}>{m.time?`${m.time} UHR`:"HH:MM UHR"}</div>
                     </div>
                   </div>
                 );
