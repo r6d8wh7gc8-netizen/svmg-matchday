@@ -273,52 +273,58 @@ function MatchdayPoster({ d, caption, positions, onMove, editMode }) {
   );
 }
 
-function ScheduleBadge({ src, alt }) {
-  return src
-    ? <img src={src} alt={alt} style={{width:56,height:56,objectFit:"contain",flexShrink:0}}/>
-    : <div style={{width:56,height:56,borderRadius:"50%",border:"2px dashed rgba(255,255,255,0.55)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🛡️</div>;
-}
-
-function SchedulePoster({ d, logoLib }) {
+function SchedulePoster({ d, logoLib, positions, onMove, editMode }) {
   const fmt = FORMATS.find(f=>f.id===d.format)||FORMATS[0];
+  const db = editMode ? "1px dashed rgba(255,255,255,0.5)" : "none";
+  const dp = editMode ? "4px 8px" : "0";
   const dateStr = raw => {
     if (!raw) return "TT.MM.JJJJ";
     const [y,m,day] = raw.split("-");
     return day && m && y ? `${day}.${m}.${y}` : raw;
   };
   return (
-    <div style={{width:"100%",aspectRatio:fmt.ratio,position:"relative",borderRadius:14,border:"2px solid rgba(255,255,255,0.12)",boxShadow:"0 8px 40px rgba(0,0,0,0.6)",overflow:"hidden",background:"linear-gradient(160deg,#1c25dd 0%,#171fb8 55%,#131b9e 100%)",display:"flex",flexDirection:"column"}}>
+    <div style={{width:"100%",aspectRatio:fmt.ratio,display:"flex",flexDirection:"column",borderRadius:14,border:"2px solid rgba(255,255,255,0.12)",boxShadow:"0 8px 40px rgba(0,0,0,0.6)",position:"relative",backgroundColor:"#1a22b8",overflow:"hidden"}}>
       {d.bgImage && (
         <div style={{position:"absolute",inset:0,zIndex:0,overflow:"hidden"}}>
           <img src={d.bgImage} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:(d.bgOpacity??35)/100,transform:`scale(${(d.bgScale??100)/100}) translate(${d.bgX??0}%, ${d.bgY??0}%)`,transformOrigin:"center"}}/>
         </div>
       )}
-      <div style={{position:"relative",zIndex:2,flex:1,overflowY:"auto",padding:"6% 7% 8%"}}>
-        <div style={{fontFamily:"'Anton',sans-serif",textAlign:"center",color:"#fff",fontSize:"clamp(28px,9vw,44px)",letterSpacing:1,textShadow:"3px 4px 0 rgba(0,0,20,0.35)",marginBottom:"4%"}}>
-          {d.scheduleTitle || "TEAM I"}
-        </div>
-        {(d.sections||[]).map((sec,si)=>(
-          <div key={si} style={{marginBottom:"6%"}}>
-            <div style={{fontFamily:"'Anton',sans-serif",textAlign:"center",color:"#fff",fontSize:"clamp(14px,4.2vw,20px)",letterSpacing:1.5,marginBottom:"5%"}}>{sec.name}</div>
-            {(sec.matches||[]).map((m,mi)=>{
-              const oppLogo = findLogoInLib(m.opponent, logoLib);
-              const left  = m.isHome ? d.ownLogo : oppLogo;
-              const right = m.isHome ? oppLogo   : d.ownLogo;
-              return (
-                <div key={mi} style={{display:"flex",alignItems:"center",gap:"3%",marginBottom:"5%"}}>
-                  <ScheduleBadge src={left}  alt="Heim"/>
-                  <div style={{color:"rgba(255,255,255,0.55)",fontSize:"clamp(10px,2.8vw,14px)"}}>–</div>
-                  <ScheduleBadge src={right} alt="Gast"/>
-                  <div style={{width:2,alignSelf:"stretch",background:"rgba(255,255,255,0.5)",flexShrink:0}}/>
-                  <div style={{fontFamily:"'Anton',sans-serif",color:"#fff",letterSpacing:1,lineHeight:1.4,flex:1}}>
-                    <div style={{fontSize:"clamp(16px,5vw,22px)"}}>{dateStr(m.date)}</div>
-                    <div style={{fontSize:"clamp(10px,3vw,14px)",color:"rgba(255,255,255,0.85)"}}>{m.time?`${m.time} UHR`:"HH:MM UHR"}</div>
-                  </div>
-                </div>
-              );
-            })}
+      {/* TITLE */}
+      <div style={{flex:"0 0 18%",position:"relative",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",background:d.bgImage?"rgba(34,51,212,0.3)":"rgba(34,51,212,1)"}}>
+        <SplashTop dim={!!d.bgImage}/>
+        <DragText id="title" positions={positions} onMove={onMove} style={{border:db,padding:dp,borderRadius:4,textAlign:"center",whiteSpace:"nowrap"}}>
+          <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:"clamp(24px,8vw,44px)",color:"#fff",textShadow:"3px 4px 0 rgba(0,0,50,0.38)",position:"relative",zIndex:2}}>
+            {d.scheduleTitle || "TEAM I"}
           </div>
-        ))}
+        </DragText>
+      </div>
+      {/* CONTENT */}
+      <div style={{flex:1,position:"relative",overflow:"hidden",background:d.bgImage?"rgba(26,34,184,0.3)":"rgba(26,34,184,1)"}}>
+        <SplashBottom dim={!!d.bgImage}/>
+        <div style={{position:"relative",zIndex:2,height:"100%",overflowY:"auto",padding:"5% 7%"}}>
+          {(d.sections||[]).map((sec,si)=>(
+            <div key={si} style={{marginBottom:"7%"}}>
+              <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:"clamp(13px,4vw,18px)",color:"#fff",textAlign:"center",letterSpacing:1,marginBottom:"5%",textShadow:"1px 2px 0 rgba(0,0,50,0.4)"}}>{sec.name}</div>
+              {(sec.matches||[]).map((m,mi)=>{
+                const oppLogo = findLogoInLib(m.opponent, logoLib);
+                const left  = m.isHome ? d.ownLogo : oppLogo;
+                const right = m.isHome ? oppLogo   : d.ownLogo;
+                return (
+                  <div key={mi} style={{display:"flex",alignItems:"center",gap:"3%",marginBottom:"6%"}}>
+                    <LogoBox src={left}  alt="Heim"/>
+                    <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,fontSize:"clamp(14px,4vw,20px)",color:"#fff"}}>–</div>
+                    <LogoBox src={right} alt="Gast"/>
+                    <div style={{width:2,alignSelf:"stretch",background:"rgba(255,255,255,0.4)",flexShrink:0}}/>
+                    <div style={{fontFamily:d.font,fontStyle:"italic",fontWeight:900,color:"#fff",letterSpacing:1,lineHeight:1.4,flex:1,textShadow:"1px 2px 0 rgba(0,0,50,0.4)"}}>
+                      <div style={{fontSize:"clamp(16px,5vw,22px)"}}>{dateStr(m.date)}</div>
+                      <div style={{fontSize:"clamp(10px,3vw,14px)",color:"rgba(255,255,255,0.85)"}}>{m.time?`${m.time} UHR`:"HH:MM UHR"}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -764,21 +770,21 @@ export default function App() {
             </div>
           )}
 
+          {/* Schriftart */}
+          <div style={card}>
+            <label style={{fontSize:13,marginBottom:12}}>Schriftart</label>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {FONTS.map(f=>(
+                <button key={f.id} onClick={()=>set("font",f.id)} style={{background:form.font===f.id?"rgba(34,51,212,0.5)":"rgba(255,255,255,0.05)",border:`1.5px solid ${form.font===f.id?"#6eb4ff":"rgba(255,255,255,0.1)"}`,borderRadius:8,padding:"10px 12px",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:2}}>
+                  <span style={{fontFamily:f.id,fontSize:18,color:"#fff",fontStyle:"italic",lineHeight:1}}>Spieltag</span>
+                  <span style={{fontSize:10,color:form.font===f.id?"#6eb4ff":"rgba(255,255,255,0.4)",letterSpacing:.5,textTransform:"uppercase"}}>{f.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {!isSchedule && (
             <>
-              {/* Schriftart */}
-              <div style={card}>
-                <label style={{fontSize:13,marginBottom:12}}>Schriftart</label>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                  {FONTS.map(f=>(
-                    <button key={f.id} onClick={()=>set("font",f.id)} style={{background:form.font===f.id?"rgba(34,51,212,0.5)":"rgba(255,255,255,0.05)",border:`1.5px solid ${form.font===f.id?"#6eb4ff":"rgba(255,255,255,0.1)"}`,borderRadius:8,padding:"10px 12px",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:2}}>
-                      <span style={{fontFamily:f.id,fontSize:18,color:"#fff",fontStyle:"italic",lineHeight:1}}>Spieltag</span>
-                      <span style={{fontSize:10,color:form.font===f.id?"#6eb4ff":"rgba(255,255,255,0.4)",letterSpacing:.5,textTransform:"uppercase"}}>{f.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Ton + Hashtags */}
               <div style={card}>
                 <label style={{fontSize:13,marginBottom:10}}>Ton & Hashtags</label>
@@ -802,19 +808,17 @@ export default function App() {
         {/* PREVIEW */}
         <div style={{width:310,flexShrink:0,position:"sticky",top:22}}>
           <div style={{fontSize:11,fontWeight:700,letterSpacing:.8,textTransform:"uppercase",color:"rgba(255,255,255,0.35)",marginBottom:10}}>Vorschau</div>
-          {!isSchedule && (
-            <div style={{display:"flex",gap:8,marginBottom:10}}>
-              <button onClick={()=>setEditMode(v=>!v)} style={{flex:1,background:editMode?"rgba(255,200,0,0.2)":"rgba(255,255,255,0.07)",border:`1.5px solid ${editMode?"#ffd700":"rgba(255,255,255,0.18)"}`,borderRadius:8,padding:"8px",color:editMode?"#ffd700":"rgba(255,255,255,0.6)",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                {editMode?"✅ Fertig":"✏️ Texte verschieben"}
-              </button>
-              {Object.keys(positions).length>0 && <button onClick={()=>setAllPositions(p=>({...p, [form.postType]: {}}))} style={{background:"rgba(255,60,60,0.15)",border:"1px solid rgba(255,60,60,0.3)",borderRadius:8,padding:"8px 12px",color:"#ff8080",fontSize:12,cursor:"pointer"}}>↺</button>}
-            </div>
-          )}
-          {editMode && !isSchedule && <div style={{background:"rgba(255,200,0,0.08)",border:"1px solid rgba(255,200,0,0.25)",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:12,color:"rgba(255,220,100,0.8)"}}>👆 Texte auf dem Poster ziehen</div>}
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            <button onClick={()=>setEditMode(v=>!v)} style={{flex:1,background:editMode?"rgba(255,200,0,0.2)":"rgba(255,255,255,0.07)",border:`1.5px solid ${editMode?"#ffd700":"rgba(255,255,255,0.18)"}`,borderRadius:8,padding:"8px",color:editMode?"#ffd700":"rgba(255,255,255,0.6)",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+              {editMode?"✅ Fertig":"✏️ Texte verschieben"}
+            </button>
+            {Object.keys(positions).length>0 && <button onClick={()=>setAllPositions(p=>({...p, [form.postType]: {}}))} style={{background:"rgba(255,60,60,0.15)",border:"1px solid rgba(255,60,60,0.3)",borderRadius:8,padding:"8px 12px",color:"#ff8080",fontSize:12,cursor:"pointer"}}>↺</button>}
+          </div>
+          {editMode && <div style={{background:"rgba(255,200,0,0.08)",border:"1px solid rgba(255,200,0,0.25)",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:12,color:"rgba(255,220,100,0.8)"}}>👆 Texte auf dem Poster ziehen</div>}
 
           <div ref={posterRef}>
             {isSchedule
-              ? <SchedulePoster d={form} logoLib={logoLib}/>
+              ? <SchedulePoster d={form} logoLib={logoLib} positions={positions} onMove={onMove} editMode={editMode}/>
               : isResult
                 ? <ResultPoster d={form} positions={positions} onMove={onMove} editMode={editMode}/>
                 : <MatchdayPoster d={form} caption={caption} positions={positions} onMove={onMove} editMode={editMode}/>
